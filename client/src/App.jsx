@@ -36,7 +36,7 @@ const AppRoutes = () => {
         <Route path="journal" element={<JournalPage />} />
         <Route path="habits" element={<HabitsPage />} />
         <Route path="focus" element={<FocusPage />} />
-        <Route path="coach" element={<AICoachPage />} />
+        <Route path="ai-coach" element={<AICoachPage />} />
       </Route>
       
       <Route path="*" element={<Navigate to="/" replace />} />
