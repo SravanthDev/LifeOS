@@ -1,59 +1,35 @@
-import express from 'express';
-import cors from 'cors';
-import dotenv from 'dotenv';
-import mongoose from 'mongoose';
-import authRoutes from './routes/auth.js';
-import taskRoutes from './routes/tasks.js';
-import journalRoutes from './routes/journals.js';
-import habitRoutes from './routes/habits.js';
-import statsRoutes from './routes/stats.js';
-import focusRoutes from './routes/focus.js';
-import aiRoutes from './routes/ai.js';
+import { createApp } from './src/app.js';
+import database from './src/core/database.js';
+import config from './src/core/config.js';
+import logger from './src/core/logger.js';
 
-dotenv.config();
-
-const app = express();
-const PORT = process.env.PORT || 8001;
-
-// Middleware
-app.use(cors({ origin: process.env.CORS_ORIGINS || '*' }));
-app.use(express.json());
-
-// MongoDB Connection
-const connectDB = async () => {
+/**
+ * Server entry point — SRP: only handles startup and shutdown.
+ * App creation and database connection are delegated to their own modules.
+ */
+async function startServer() {
   try {
-    const mongoUrl = process.env.MONGO_URL || 'mongodb://localhost:27017';
-    const dbName = process.env.DB_NAME || 'lifeos_db';
-    await mongoose.connect(`${mongoUrl}/${dbName}`);
-    console.log('✅ MongoDB Connected');
+    await database.connect();
+
+    const app = createApp();
+
+    app.listen(config.port, () => {
+      logger.info(`🚀 Server running on port ${config.port}`);
+    });
+
+    // Graceful shutdown
+    const shutdown = async () => {
+      logger.info('Shutting down gracefully...');
+      await database.disconnect();
+      process.exit(0);
+    };
+
+    process.on('SIGINT', shutdown);
+    process.on('SIGTERM', shutdown);
   } catch (error) {
-    console.error('❌ MongoDB Connection Error:', error);
+    logger.error('Failed to start server:', error.message);
     process.exit(1);
   }
-};
+}
 
-connectDB();
-
-// Health Check
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', message: 'LifeOS AI Dashboard API' });
-});
-
-// Routes
-app.use('/api/auth', authRoutes);
-app.use('/api/tasks', taskRoutes);
-app.use('/api/journals', journalRoutes);
-app.use('/api/habits', habitRoutes);
-app.use('/api/stats', statsRoutes);
-app.use('/api/focus', focusRoutes);
-app.use('/api/ai', aiRoutes);
-
-// Error Handler
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({ error: err.message });
-});
-
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-});
+startServer();

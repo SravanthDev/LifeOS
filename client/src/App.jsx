@@ -1,86 +1,65 @@
-import React, { useState, useEffect, createContext, useContext } from 'react';
+import React, { useContext } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import axios from 'axios';
-import Dashboard from './components/Dashboard.jsx';
-import Auth from './components/Auth.jsx';
 import { Toaster } from 'sonner';
 
-const API_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8001';
+// Context
+import { AuthProvider, AuthContext } from './context/AuthContext';
 
-export const AuthContext = createContext();
+// Features
+import AuthPage from './features/auth/AuthPage';
+import DashboardLayout from './features/dashboard/DashboardLayout';
+import DashboardHome from './features/dashboard/DashboardHome';
+import TasksPage from './features/tasks/TasksPage';
+import JournalPage from './features/journal/JournalPage';
+import HabitsPage from './features/habits/HabitsPage';
+import AICoachPage from './features/ai/AICoachPage';
+import FocusPage from './features/focus/FocusPage';
 
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within AuthProvider');
+const ProtectedRoute = ({ children }) => {
+  const { user } = useContext(AuthContext);
+  if (!user) {
+    return <Navigate to="/login" replace />;
   }
-  return context;
+  return children;
+};
+
+const AppRoutes = () => {
+  const { user } = useContext(AuthContext);
+
+  return (
+    <Routes>
+      <Route path="/login" element={user ? <Navigate to="/" replace /> : <AuthPage />} />
+      
+      <Route path="/" element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
+        <Route index element={<DashboardHome />} />
+        <Route path="tasks" element={<TasksPage />} />
+        <Route path="journal" element={<JournalPage />} />
+        <Route path="habits" element={<HabitsPage />} />
+        <Route path="focus" element={<FocusPage />} />
+        <Route path="coach" element={<AICoachPage />} />
+      </Route>
+      
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
+  );
 };
 
 function App() {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [token, setToken] = useState(localStorage.getItem('token'));
-
-  useEffect(() => {
-    if (token) {
-      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-      fetchUser();
-    } else {
-      setLoading(false);
-    }
-  }, [token]);
-
-  const fetchUser = async () => {
-    try {
-      const response = await axios.get(`${API_URL}/api/auth/me`);
-      setUser(response.data.user);
-    } catch (error) {
-      console.error('Failed to fetch user:', error);
-      logout();
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const login = (newToken, userData) => {
-    localStorage.setItem('token', newToken);
-    axios.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
-    setToken(newToken);
-    setUser(userData);
-  };
-
-  const logout = () => {
-    localStorage.removeItem('token');
-    delete axios.defaults.headers.common['Authorization'];
-    setToken(null);
-    setUser(null);
-  };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
-      </div>
-    );
-  }
-
   return (
-    <AuthContext.Provider value={{ user, login, logout, token }}>
+    <AuthProvider>
       <Router>
-        <Routes>
-          <Route
-            path="/auth"
-            element={!user ? <Auth /> : <Navigate to="/" />}
+        <div className="min-h-screen bg-slate-950 text-slate-200 font-sans selection:bg-indigo-500/30">
+          <Toaster 
+            theme="dark" 
+            position="top-right"
+            toastOptions={{
+              className: 'bg-black/80 backdrop-blur-md border border-white/10 text-white',
+            }}
           />
-          <Route
-            path="/*"
-            element={user ? <Dashboard /> : <Navigate to="/auth" />}
-          />
-        </Routes>
+          <AppRoutes />
+        </div>
       </Router>
-      <Toaster position="top-right" richColors theme="dark" />
-    </AuthContext.Provider>
+    </AuthProvider>
   );
 }
 

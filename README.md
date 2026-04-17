@@ -150,3 +150,19 @@ LifeOS/
 ## 📄 License
 
 MIT
+
+## 🏗️ Architecture (SOLID)
+
+This project has been refactored into a scalable, production-grade architecture.
+
+### Backend Structure (Layered)
+* **Routes:** `src/modules/*/` - Declarative HTTP routing
+* **Controllers:** `src/modules/*/` - HTTP request extraction and response wrapping
+* **Services:** `src/modules/*/` - Pure business logic
+* **Repositories:** `src/modules/*/` - Database abstraction layer
+* **Core:** `src/core/` - Centralized config, logger, and DB connection
+
+### Frontend Structure (Feature-Based)
+* **Features:** `src/features/` - Domain-specific views and logic (tasks, habits, etc.)
+* **Services:** `src/services/` - Clean API abstraction using Axios interceptors
+* **Context:** `src/context/` - Global state management
