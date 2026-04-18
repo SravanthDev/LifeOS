@@ -29,7 +29,7 @@ const TopTasks = ({ onUpdate }) => {
     if (!newTaskTitle.trim()) return;
 
     try {
-      await axios.post(`${API_URL}/api/tasks`, {
+      await taskService.createTask({
         title: newTaskTitle,
         priority: tasks.length < 3 ? 3 : 0,
         group: 'daily'
